@@ -11,9 +11,17 @@ const catalog = videos as CatalogVideo[];
 // looks identical on every rebuild for the same input data.
 const ROW_ORDER = [
   "Keynote Speaker Reels",
-  "Keynote Highlights",
-  "AI Tools & Demos",
-  "Future of Work",
+  "Keynote Reels",
+  "Agentic AI & AI Agents",
+  "AI Tools & Products",
+  "Future of Work & Careers",
+  "Innovation & Disruption",
+  "Customer Experience & Trends",
+  "Public Sector, Healthcare & HR",
+  "Boldness & Mindset",
+  "Presentation & Storytelling Craft",
+  "Behind the Scenes & Personal",
+  "Generative AI & The Future",
   "Trending Now",
 ];
 

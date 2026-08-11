@@ -33,21 +33,64 @@ const SHORTS_CHECK_CONCURRENCY = 8;
 // Deterministic keyword rules applied to each title, in this order, so a
 // re-run always assigns the same categories to the same videos. A video can
 // match more than one rule, mirroring how a title can live in several
-// Netflix genre rows at once.
+// Netflix genre rows at once. Rules are ordered most-specific first so a
+// video lands in its sharpest genre(s) before falling through to the broad
+// "Generative AI & The Future" catch-all, then finally FALLBACK_CATEGORY.
 const CATEGORY_RULES = [
-  { name: 'Keynote Highlights', test: (t) => /keynote/i.test(t) },
+  { name: 'Keynote Reels', test: (t) => /keynote reel/i.test(t) },
   {
-    name: 'AI Tools & Demos',
+    name: 'Agentic AI & AI Agents',
+    test: (t) => /agentic ai|ai agents?|\bagent\b/i.test(t),
+  },
+  {
+    name: 'AI Tools & Products',
     test: (t) =>
-      /(claude|chatgpt|gpt-?\d|gemini|perplexity|sora|openclaw|nano banana|heygen|codex|\bv0\b|lovable|replit|clawdbot|moltbot|visionclaw)/i.test(
+      /chatgpt|gpt-?\d|\bo1\b|openai|gemini|claude|vercel|\bv0\b|sora|perplexity|copilot|scarlett johansson/i.test(
         t
       ),
   },
   {
-    name: 'Future of Work',
-    test: (t) => /(job|career|\bwork\b|skill|employee|labou?r)/i.test(t),
+    name: 'Future of Work & Careers',
+    test: (t) => /future of work|\bjobs?\b|career|knowledge work|labou?r|\brecruit/i.test(t),
+  },
+  {
+    name: 'Innovation & Disruption',
+    test: (t) => /innovation|disrupt|strategist|\bstrategy\b/i.test(t),
+  },
+  {
+    name: 'Customer Experience & Trends',
+    test: (t) =>
+      /customer|\bcx\b|trend|attention economy|addiction economy|narrator economy|superstars|costly signaling/i.test(
+        t
+      ),
+  },
+  {
+    name: 'Public Sector, Healthcare & HR',
+    test: (t) => /healthcare|public sector|government|\bhr\b|bureaucracy/i.test(t),
+  },
+  {
+    name: 'Boldness & Mindset',
+    test: (t) => /\bbold\b|boldness|darkness|imposters|scared|exposure/i.test(t),
+  },
+  {
+    name: 'Presentation & Storytelling Craft',
+    test: (t) => /slides|presentation|storytell/i.test(t),
+  },
+  {
+    name: 'Behind the Scenes & Personal',
+    test: (t) =>
+      /vlog|behind the scenes|interview|book signing|book advance|green room|mixtape|audition tape|anniversary|convocation|headlining|entrepreneur|aging parents/i.test(
+        t
+      ),
+  },
+  {
+    name: 'Generative AI & The Future',
+    test: (t) => /generative ai|artificial intelligence|\bai\b/i.test(t),
   },
 ];
+
+// Mirror this order in src/app/page.tsx's ROW_ORDER — most curated/specific
+// genres first, the broad AI catch-all near the end, FALLBACK_CATEGORY last.
 
 if (!API_KEY) {
   console.error(
