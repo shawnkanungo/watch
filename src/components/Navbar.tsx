@@ -1,0 +1,14 @@
+export default function Navbar() {
+  return (
+    <header className="fixed top-0 z-30 w-full bg-gradient-to-b from-black/80 to-transparent px-4 py-4 sm:px-8">
+      <div className="flex items-center gap-8">
+        <span className="text-2xl font-black tracking-tight text-[#e50914] sm:text-3xl">
+          CATALOG
+        </span>
+        <nav className="hidden gap-5 text-sm text-zinc-200 sm:flex">
+          <span className="font-semibold text-white">Home</span>
+        </nav>
+      </div>
+    </header>
+  );
+}

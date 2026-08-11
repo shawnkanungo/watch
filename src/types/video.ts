@@ -8,4 +8,5 @@ export type CatalogVideo = {
   durationSeconds: number;
   duration: string;
   url: string;
+  categories: string[];
 };

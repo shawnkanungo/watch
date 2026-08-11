@@ -16,6 +16,26 @@ const TOTAL_LIMIT = 100;
 const SHORTS_MAX_SECONDS = 60;
 const PAGES_PER_CHANNEL = 2;
 const API_BASE = 'https://www.googleapis.com/youtube/v3';
+const FALLBACK_CATEGORY = 'Trending Now';
+
+// Deterministic keyword rules applied to each title, in this order, so a
+// re-run always assigns the same categories to the same videos. A video can
+// match more than one rule, mirroring how a title can live in several
+// Netflix genre rows at once.
+const CATEGORY_RULES = [
+  { name: 'Keynote Highlights', test: (t) => /keynote/i.test(t) },
+  {
+    name: 'AI Tools & Demos',
+    test: (t) =>
+      /(claude|chatgpt|gpt-?\d|gemini|perplexity|sora|openclaw|nano banana|heygen|codex|\bv0\b|lovable|replit|clawdbot|moltbot|visionclaw)/i.test(
+        t
+      ),
+  },
+  {
+    name: 'Future of Work',
+    test: (t) => /(job|career|\bwork\b|skill|employee|labou?r)/i.test(t),
+  },
+];
 
 if (!API_KEY) {
   console.error(
@@ -94,6 +114,58 @@ async function fetchRecentPlaylistItems(uploadsPlaylistId, pages) {
   return items;
 }
 
+async function fetchChannelPlaylists(channelId) {
+  const url = buildUrl('playlists', {
+    part: 'snippet',
+    channelId,
+    maxResults: '50',
+  });
+  const data = await getJson(url);
+  return data.items ?? [];
+}
+
+async function fetchPlaylistVideoIds(playlistId, pages) {
+  const videoIds = [];
+  let pageToken;
+  for (let page = 0; page < pages; page += 1) {
+    const url = buildUrl('playlistItems', {
+      part: 'contentDetails',
+      playlistId,
+      maxResults: '50',
+      ...(pageToken ? { pageToken } : {}),
+    });
+    const data = await getJson(url);
+    videoIds.push(...(data.items ?? []).map((item) => item.contentDetails.videoId));
+    pageToken = data.nextPageToken;
+    if (!pageToken) break;
+  }
+  return videoIds;
+}
+
+// Maps videoId -> Set of curated playlist titles it belongs to.
+async function buildPlaylistCategoryMap(channelId) {
+  const playlists = await fetchChannelPlaylists(channelId);
+  const map = new Map();
+  for (const playlist of playlists) {
+    const videoIds = await fetchPlaylistVideoIds(playlist.id, PAGES_PER_CHANNEL);
+    for (const videoId of videoIds) {
+      const categories = map.get(videoId) ?? new Set();
+      categories.add(playlist.snippet.title);
+      map.set(videoId, categories);
+    }
+  }
+  return map;
+}
+
+function categorize(title, playlistCategories) {
+  const categories = new Set(playlistCategories ?? []);
+  for (const rule of CATEGORY_RULES) {
+    if (rule.test(title)) categories.add(rule.name);
+  }
+  if (categories.size === 0) categories.add(FALLBACK_CATEGORY);
+  return [...categories].sort();
+}
+
 async function fetchVideoDetails(videoIds) {
   const details = [];
   for (let i = 0; i < videoIds.length; i += 50) {
@@ -137,11 +209,11 @@ async function main() {
 
   const candidatesByChannel = await Promise.all(
     channels.map(async (channel) => {
-      const playlistItems = await fetchRecentPlaylistItems(
-        channel.uploadsPlaylistId,
-        PAGES_PER_CHANNEL
-      );
-      return { channel, playlistItems };
+      const [playlistItems, playlistCategoryMap] = await Promise.all([
+        fetchRecentPlaylistItems(channel.uploadsPlaylistId, PAGES_PER_CHANNEL),
+        buildPlaylistCategoryMap(channel.channelId),
+      ]);
+      return { channel, playlistItems, playlistCategoryMap };
     })
   );
 
@@ -153,7 +225,7 @@ async function main() {
   const videoDetailsById = new Map(videoDetails.map((v) => [v.id, v]));
 
   const records = [];
-  for (const { channel, playlistItems } of candidatesByChannel) {
+  for (const { channel, playlistItems, playlistCategoryMap } of candidatesByChannel) {
     for (const item of playlistItems) {
       const videoId = item.contentDetails.videoId;
       const video = videoDetailsById.get(videoId);
@@ -174,6 +246,7 @@ async function main() {
         durationSeconds,
         duration: formatDuration(durationSeconds),
         url: `https://www.youtube.com/watch?v=${videoId}`,
+        categories: categorize(video.snippet.title, playlistCategoryMap.get(videoId)),
       });
     }
   }
