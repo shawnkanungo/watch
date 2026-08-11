@@ -14,6 +14,11 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_HANDLES = ['@shawn.kanungo'];
 const TOTAL_LIMIT = 100;
 const PAGES_PER_CHANNEL = 2;
+// A channel's recent uploads can skew heavily toward Shorts, so filling the
+// 100-video target means paging deeper into its history, not just the most
+// recent 100 uploads. This bounds how deep we'll go per channel (50/page) —
+// finite and deterministic, not open-ended pagination.
+const MAX_UPLOAD_PAGES_PER_CHANNEL = 40;
 const API_BASE = 'https://www.googleapis.com/youtube/v3';
 const FALLBACK_CATEGORY = 'Trending Now';
 
@@ -103,22 +108,14 @@ async function resolveUploadsPlaylistId(handle) {
   };
 }
 
-async function fetchRecentPlaylistItems(uploadsPlaylistId, pages) {
-  const items = [];
-  let pageToken;
-  for (let page = 0; page < pages; page += 1) {
-    const url = buildUrl('playlistItems', {
-      part: 'contentDetails,snippet,status',
-      playlistId: uploadsPlaylistId,
-      maxResults: '50',
-      ...(pageToken ? { pageToken } : {}),
-    });
-    const data = await getJson(url);
-    items.push(...(data.items ?? []));
-    pageToken = data.nextPageToken;
-    if (!pageToken) break;
-  }
-  return items;
+async function fetchUploadsPage(uploadsPlaylistId, pageToken) {
+  const url = buildUrl('playlistItems', {
+    part: 'contentDetails,snippet,status',
+    playlistId: uploadsPlaylistId,
+    maxResults: '50',
+    ...(pageToken ? { pageToken } : {}),
+  });
+  return getJson(url);
 }
 
 async function fetchChannelPlaylists(channelId) {
@@ -247,35 +244,32 @@ async function filterOutShorts(candidates) {
   return candidates.filter((c) => !shortIds.has(c.id));
 }
 
-async function main() {
-  const channels = await Promise.all(CHANNEL_HANDLES.map(resolveUploadsPlaylistId));
+// Pages through a channel's uploads, oldest-page-last, collecting eligible
+// non-Short videos until it has TOTAL_LIMIT of them or the channel runs out.
+async function collectChannelVideos(channel, playlistCategoryMap) {
+  const eligible = [];
+  let pageToken;
+  let pagesFetched = 0;
 
-  const candidatesByChannel = await Promise.all(
-    channels.map(async (channel) => {
-      const [playlistItems, playlistCategoryMap] = await Promise.all([
-        fetchRecentPlaylistItems(channel.uploadsPlaylistId, PAGES_PER_CHANNEL),
-        buildPlaylistCategoryMap(channel.channelId),
-      ]);
-      return { channel, playlistItems, playlistCategoryMap };
-    })
-  );
+  while (eligible.length < TOTAL_LIMIT && pagesFetched < MAX_UPLOAD_PAGES_PER_CHANNEL) {
+    const page = await fetchUploadsPage(channel.uploadsPlaylistId, pageToken);
+    const items = page.items ?? [];
+    pagesFetched += 1;
+    pageToken = page.nextPageToken;
+    if (items.length === 0) break;
 
-  const allVideoIds = candidatesByChannel.flatMap(({ playlistItems }) =>
-    playlistItems.map((item) => item.contentDetails.videoId)
-  );
-  const uniqueVideoIds = [...new Set(allVideoIds)];
-  const videoDetails = await fetchVideoDetails(uniqueVideoIds);
-  const videoDetailsById = new Map(videoDetails.map((v) => [v.id, v]));
+    const videoIds = items.map((item) => item.contentDetails.videoId);
+    const videoDetails = await fetchVideoDetails(videoIds);
+    const videoDetailsById = new Map(videoDetails.map((v) => [v.id, v]));
 
-  const records = [];
-  for (const { channel, playlistItems, playlistCategoryMap } of candidatesByChannel) {
-    for (const item of playlistItems) {
+    const pageCandidates = [];
+    for (const item of items) {
       const videoId = item.contentDetails.videoId;
       const video = videoDetailsById.get(videoId);
       if (!video || !isEligible(video)) continue;
 
       const durationSeconds = parseIsoDurationToSeconds(video.contentDetails.duration);
-      records.push({
+      pageCandidates.push({
         id: videoId,
         title: video.snippet.title,
         thumbnailUrl:
@@ -292,11 +286,29 @@ async function main() {
         categories: categorize(video.snippet.title, playlistCategoryMap.get(videoId)),
       });
     }
+
+    eligible.push(...(await filterOutShorts(pageCandidates)));
+
+    if (!pageToken) break;
   }
+
+  return eligible;
+}
+
+async function main() {
+  const channels = await Promise.all(CHANNEL_HANDLES.map(resolveUploadsPlaylistId));
+
+  const perChannelVideos = await Promise.all(
+    channels.map(async (channel) => {
+      const playlistCategoryMap = await buildPlaylistCategoryMap(channel.channelId);
+      return collectChannelVideos(channel, playlistCategoryMap);
+    })
+  );
+  const records = perChannelVideos.flat();
 
   // Dedupe (a video could theoretically surface twice within a channel's own pages).
   const dedupedById = new Map(records.map((r) => [r.id, r]));
-  const deduped = [...(await filterOutShorts([...dedupedById.values()]))];
+  const deduped = [...dedupedById.values()];
 
   // Sort newest -> oldest; break ties by id for deterministic, stable ordering.
   deduped.sort((a, b) => {

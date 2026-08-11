@@ -15,4 +15,8 @@ The video catalog is a **static, build-time snapshot**: `content/videos.json`.
   a duration cutoff — YouTube allows Shorts up to 3 minutes now, so duration
   alone under- or over-includes. Only genuine horizontal, full-length videos
   make it into the catalog.
+- Recent uploads skew heavily toward Shorts, so the script pages up to
+  `MAX_UPLOAD_PAGES_PER_CHANNEL` (2,000 uploads) deep per channel, stopping
+  early once it has 100 eligible videos, so the catalog fills up to 100
+  full-length videos rather than just whatever's in the newest page.
 - Requires `YOUTUBE_API_KEY` in `.env.local` (gitignored).
