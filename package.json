@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run fetch:videos",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "fetch:videos": "node --env-file-if-exists=.env.local scripts/fetch-youtube-catalog.mjs"
   },
   "dependencies": {
     "next": "16.3.0",
