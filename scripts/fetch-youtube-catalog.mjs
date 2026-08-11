@@ -13,10 +13,17 @@ const OUTPUT_PATH = path.join(__dirname, '..', 'content', 'videos.json');
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_HANDLES = ['@shawn.kanungo'];
 const TOTAL_LIMIT = 100;
-const SHORTS_MAX_SECONDS = 60;
 const PAGES_PER_CHANNEL = 2;
 const API_BASE = 'https://www.googleapis.com/youtube/v3';
 const FALLBACK_CATEGORY = 'Trending Now';
+
+// YouTube caps Shorts at 3 minutes, so anything longer is guaranteed
+// long-form and skips the network check below. Anything at or under that
+// gets verified against YouTube's own Shorts classification, since Shorts
+// can run well past the old 60-second assumption and duration alone is not
+// a reliable signal anymore.
+const SHORTS_CANDIDATE_MAX_SECONDS = 180;
+const SHORTS_CHECK_CONCURRENCY = 8;
 
 // Deterministic keyword rules applied to each title, in this order, so a
 // re-run always assigns the same categories to the same videos. A video can
@@ -181,7 +188,7 @@ async function fetchVideoDetails(videoIds) {
 }
 
 function isEligible(video) {
-  const { status, liveStreamingDetails, contentDetails } = video;
+  const { status, liveStreamingDetails } = video;
 
   if (status?.privacyStatus !== 'public') return false;
 
@@ -198,10 +205,46 @@ function isEligible(video) {
     return false;
   }
 
-  const durationSeconds = parseIsoDurationToSeconds(contentDetails.duration);
-  if (durationSeconds <= SHORTS_MAX_SECONDS) return false; // Shorts
-
   return true;
+}
+
+// YouTube's own classification: requesting /shorts/{id} serves the Shorts
+// player (200) for a Short, or redirects to /watch?v={id} (3xx) for a
+// regular video. This is more reliable than a duration cutoff.
+async function isShort(videoId, attempt = 1) {
+  try {
+    const res = await fetch(`https://www.youtube.com/shorts/${videoId}`, {
+      redirect: 'manual',
+    });
+    if (res.status >= 300 && res.status < 400) return false;
+    if (res.status === 200) return true;
+    throw new Error(`Unexpected status ${res.status} checking Shorts status for ${videoId}`);
+  } catch (err) {
+    if (attempt >= 3) throw err;
+    await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+    return isShort(videoId, attempt + 1);
+  }
+}
+
+async function filterOutShorts(candidates) {
+  const toCheck = candidates.filter(
+    (c) => c.durationSeconds <= SHORTS_CANDIDATE_MAX_SECONDS
+  );
+  const shortIds = new Set();
+
+  let cursor = 0;
+  async function worker() {
+    while (cursor < toCheck.length) {
+      const current = toCheck[cursor];
+      cursor += 1;
+      if (await isShort(current.id)) shortIds.add(current.id);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(SHORTS_CHECK_CONCURRENCY, toCheck.length) }, worker)
+  );
+
+  return candidates.filter((c) => !shortIds.has(c.id));
 }
 
 async function main() {
@@ -253,7 +296,7 @@ async function main() {
 
   // Dedupe (a video could theoretically surface twice within a channel's own pages).
   const dedupedById = new Map(records.map((r) => [r.id, r]));
-  const deduped = [...dedupedById.values()];
+  const deduped = [...(await filterOutShorts([...dedupedById.values()]))];
 
   // Sort newest -> oldest; break ties by id for deterministic, stable ordering.
   deduped.sort((a, b) => {

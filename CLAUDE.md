@@ -10,4 +10,9 @@ The video catalog is a **static, build-time snapshot**: `content/videos.json`.
   ever reads `content/videos.json`.
 - Re-running `npm run fetch:videos` is idempotent: same channels in, same
   100 (or fewer) records out, sorted newest → oldest.
+- Shorts are excluded using YouTube's own `/shorts/{id}` redirect
+  classification (200 = Short, redirect to `/watch` = full video), not just
+  a duration cutoff — YouTube allows Shorts up to 3 minutes now, so duration
+  alone under- or over-includes. Only genuine horizontal, full-length videos
+  make it into the catalog.
 - Requires `YOUTUBE_API_KEY` in `.env.local` (gitignored).
