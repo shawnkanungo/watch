@@ -37,7 +37,10 @@ const SHORTS_CHECK_CONCURRENCY = 8;
 // video lands in its sharpest genre(s) before falling through to the broad
 // "Generative AI & The Future" catch-all, then finally FALLBACK_CATEGORY.
 const CATEGORY_RULES = [
-  { name: 'Keynote Reels', test: (t) => /keynote reel/i.test(t) },
+  // Merges with the curated "Keynote Speaker Reels" playlist (see
+  // buildPlaylistCategoryMap) rather than being a separate row — every
+  // title matching "keynote reel" already sits inside that playlist.
+  { name: 'Keynote Speaker Reels', test: (t) => /keynote reel/i.test(t) },
   {
     name: 'Agentic AI & AI Agents',
     test: (t) => /agentic ai|ai agents?|\bagent\b/i.test(t),

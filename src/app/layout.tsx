@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Catalog",
+  title: "Watch",
   description: "A bounded, build-time snapshot of YouTube uploads.",
 };
 

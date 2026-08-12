@@ -10,9 +10,8 @@ const catalog = videos as CatalogVideo[];
 // anything else falls into "Trending Now" last. Order is fixed so the page
 // looks identical on every rebuild for the same input data.
 const ROW_ORDER = [
-  "Keynote Speaker Reels",
-  "Keynote Reels",
   "Agentic AI & AI Agents",
+  "Keynote Speaker Reels",
   "AI Tools & Products",
   "Future of Work & Careers",
   "Innovation & Disruption",
@@ -42,7 +41,9 @@ function groupByCategory(items: CatalogVideo[]) {
 
 export default function Home() {
   const rows = groupByCategory(catalog);
-  const keynoteReels = catalog.filter((video) => video.categories.includes("Keynote Reels"));
+  const keynoteReels = catalog.filter((video) =>
+    video.categories.includes("Keynote Speaker Reels")
+  );
   const hero = keynoteReels[0] ?? catalog[0];
 
   return (
