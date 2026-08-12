@@ -42,7 +42,8 @@ function groupByCategory(items: CatalogVideo[]) {
 
 export default function Home() {
   const rows = groupByCategory(catalog);
-  const hero = catalog[0];
+  const keynoteReels = catalog.filter((video) => video.categories.includes("Keynote Reels"));
+  const hero = keynoteReels[0] ?? catalog[0];
 
   return (
     <div className="min-h-screen bg-[#141414] text-white">
