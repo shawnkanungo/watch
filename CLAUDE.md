@@ -20,3 +20,8 @@ The video catalog is a **static, build-time snapshot**: `content/videos.json`.
   early once it has 100 eligible videos, so the catalog fills up to 100
   full-length videos rather than just whatever's in the newest page.
 - Requires `YOUTUBE_API_KEY` in `.env.local` (gitignored).
+- Kept fresh in production by `.github/workflows/refresh-catalog.yml`, a
+  daily scheduled job that re-runs `npm run fetch:videos` and commits
+  `content/videos.json` if it changed. Requires a `YOUTUBE_API_KEY` repo
+  secret; a push to `content/videos.json` triggers a redeploy if the host
+  (e.g. Vercel) is connected to the GitHub repo.

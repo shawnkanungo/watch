@@ -6,7 +6,9 @@ export default function Navbar() {
           WATCH
         </span>
         <nav className="hidden gap-5 text-sm text-zinc-200 sm:flex">
-          <span className="font-semibold text-white">Home</span>
+          <a href="https://shawnkanungo.com" className="font-semibold text-white hover:text-zinc-300">
+            Home
+          </a>
         </nav>
       </div>
     </header>

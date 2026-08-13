@@ -1,0 +1,39 @@
+name: Refresh video catalog
+
+on:
+  schedule:
+    # Daily at 13:00 UTC (~9am ET / 6am PT). Adjust to taste.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch latest catalog
+        run: npm run fetch:videos
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+
+      - name: Commit catalog if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add content/videos.json
+          if git diff --cached --quiet; then
+            echo "No catalog changes."
+          else
+            git commit -m "Refresh video catalog"
+            git push
+          fi

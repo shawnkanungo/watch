@@ -12,6 +12,7 @@ const catalog = videos as CatalogVideo[];
 const ROW_ORDER = [
   "Agentic AI & AI Agents",
   "Keynote Speaker Reels",
+  "Generative AI & The Future",
   "AI Tools & Products",
   "Future of Work & Careers",
   "Innovation & Disruption",
@@ -20,7 +21,6 @@ const ROW_ORDER = [
   "Boldness & Mindset",
   "Presentation & Storytelling Craft",
   "Behind the Scenes & Personal",
-  "Generative AI & The Future",
   "Trending Now",
 ];
 
