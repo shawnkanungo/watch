@@ -52,7 +52,7 @@ export default function Home() {
 
       {hero && <Hero video={hero} />}
 
-      <main className="flex flex-col gap-8 pb-16 pt-4 sm:pt-6">
+      <main className="flex flex-col gap-10 pb-16 pt-4 sm:pt-6">
         {catalog.length === 0 && (
           <p className="px-4 text-zinc-400 sm:px-8">
             No videos yet. Run <code className="font-mono">npm run fetch:videos</code>{" "}
