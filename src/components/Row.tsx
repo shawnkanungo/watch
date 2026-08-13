@@ -37,10 +37,10 @@ export default function Row({
 
         <div
           ref={scrollerRef}
-          className="flex gap-2 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
         >
           {videos.map((video) => (
-            <div key={video.id} className="w-[45vw] shrink-0 sm:w-[23vw] lg:w-[18vw]">
+            <div key={video.id} className="w-[54vw] shrink-0 sm:w-[28vw] lg:w-[22vw]">
               <VideoTile video={video} />
             </div>
           ))}

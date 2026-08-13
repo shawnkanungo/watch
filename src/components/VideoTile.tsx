@@ -13,7 +13,7 @@ export default function VideoTile({ video }: { video: CatalogVideo }) {
         src={video.thumbnailUrl}
         alt={video.title}
         fill
-        sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+        sizes="(min-width: 1024px) 24vw, (min-width: 640px) 30vw, 56vw"
         className="object-cover"
         unoptimized
       />
