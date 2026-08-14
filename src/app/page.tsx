@@ -22,6 +22,7 @@ const ROW_ORDER = [
   "Presentation & Storytelling Craft",
   "Behind the Scenes & Personal",
   "Trending Now",
+  "Financial Services & Credit Unions",
 ];
 
 function groupByCategory(items: CatalogVideo[]) {
