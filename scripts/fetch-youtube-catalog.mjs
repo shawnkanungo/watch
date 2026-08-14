@@ -110,6 +110,14 @@ const CATEGORY_RULES = [
 const FINANCIAL_SERVICES_SEARCH_QUERIES = ['credit union', 'financial services'];
 const GUARANTEED_CATEGORY_NAME = 'Financial Services & Credit Unions';
 
+// Videos that are financial-services talks but don't say so in the title
+// (so no title rule above would ever catch them), confirmed by Shawn
+// directly. Keyed by video ID -> extra categories to force-add.
+const MANUAL_CATEGORY_OVERRIDES = {
+  '0qdGJTo0rNc': [GUARANTEED_CATEGORY_NAME], // Why the Future is Always Human
+  'ut6EGDVMG6o': [GUARANTEED_CATEGORY_NAME], // AI Will REIMAGINE Everything in 2025
+};
+
 if (!API_KEY) {
   console.error(
     'Missing YOUTUBE_API_KEY. Set it in .env.local (build-time only, never sent to the client).'
@@ -222,10 +230,13 @@ async function buildPlaylistCategoryMap(channelId) {
   return map;
 }
 
-function categorize(title, playlistCategories) {
+function categorize(videoId, title, playlistCategories) {
   const categories = new Set(playlistCategories ?? []);
   for (const rule of CATEGORY_RULES) {
     if (rule.test(title)) categories.add(rule.name);
+  }
+  for (const extra of MANUAL_CATEGORY_OVERRIDES[videoId] ?? []) {
+    categories.add(extra);
   }
   if (categories.size === 0) categories.add(FALLBACK_CATEGORY);
   return [...categories].sort();
@@ -247,7 +258,7 @@ function buildRecord(video, channel, playlistCategoryMap) {
     durationSeconds,
     duration: formatDuration(durationSeconds),
     url: `https://www.youtube.com/watch?v=${video.id}`,
-    categories: categorize(video.snippet.title, playlistCategoryMap.get(video.id)),
+    categories: categorize(video.id, video.snippet.title, playlistCategoryMap.get(video.id)),
   };
 }
 
