@@ -90,10 +90,25 @@ const CATEGORY_RULES = [
     name: 'Generative AI & The Future',
     test: (t) => /generative ai|artificial intelligence|\bai\b/i.test(t),
   },
+  {
+    name: 'Financial Services & Credit Unions',
+    test: (t) =>
+      /credit union|financial services|wealth management|\bcfo\b|fintech/i.test(t),
+  },
 ];
 
 // Mirror this order in src/app/page.tsx's ROW_ORDER — most curated/specific
 // genres first, the broad AI catch-all near the end, FALLBACK_CATEGORY last.
+
+// "Financial Services & Credit Unions" content tends to be older, so it
+// rarely survives the newest-100 cutoff below on title matching alone.
+// These search queries reach deeper into the channel's history to find it;
+// final inclusion still requires a title match against CATEGORY_RULES above,
+// so a broad/fuzzy YouTube search match alone can't sneak an unrelated video
+// in. The queries themselves are a fixed list, so results stay deterministic
+// run to run (subject only to the channel's own content changing).
+const FINANCIAL_SERVICES_SEARCH_QUERIES = ['credit union', 'financial services'];
+const GUARANTEED_CATEGORY_NAME = 'Financial Services & Credit Unions';
 
 if (!API_KEY) {
   console.error(
@@ -216,6 +231,60 @@ function categorize(title, playlistCategories) {
   return [...categories].sort();
 }
 
+function buildRecord(video, channel, playlistCategoryMap) {
+  const durationSeconds = parseIsoDurationToSeconds(video.contentDetails.duration);
+  return {
+    id: video.id,
+    title: video.snippet.title,
+    thumbnailUrl:
+      video.snippet.thumbnails?.maxres?.url ??
+      video.snippet.thumbnails?.high?.url ??
+      video.snippet.thumbnails?.medium?.url ??
+      video.snippet.thumbnails?.default?.url,
+    publishedAt: video.snippet.publishedAt,
+    channelId: channel.channelId,
+    channelTitle: channel.channelTitle,
+    durationSeconds,
+    duration: formatDuration(durationSeconds),
+    url: `https://www.youtube.com/watch?v=${video.id}`,
+    categories: categorize(video.snippet.title, playlistCategoryMap.get(video.id)),
+  };
+}
+
+async function searchChannelVideoIds(channelId, query) {
+  const url = buildUrl('search', {
+    part: 'id',
+    channelId,
+    q: query,
+    type: 'video',
+    maxResults: '25',
+  });
+  const data = await getJson(url);
+  return (data.items ?? []).map((item) => item.id.videoId);
+}
+
+// Finds eligible, non-Short videos matching GUARANTEED_CATEGORY_NAME
+// anywhere in the channel's history (not just the newest uploads), so sparse
+// but important topics aren't starved out by the newest-100 cutoff.
+async function fetchGuaranteedCategoryVideos(channel, playlistCategoryMap) {
+  const idLists = await Promise.all(
+    FINANCIAL_SERVICES_SEARCH_QUERIES.map((q) => searchChannelVideoIds(channel.channelId, q))
+  );
+  const candidateIds = [...new Set(idLists.flat())];
+  if (candidateIds.length === 0) return [];
+
+  const videoDetails = await fetchVideoDetails(candidateIds);
+  const records = videoDetails
+    .filter((video) => isEligible(video))
+    .map((video) => buildRecord(video, channel, playlistCategoryMap))
+    // Gate on our own deterministic title rule, not YouTube's fuzzy search
+    // match, so an unrelated video that merely mentions the topic in its
+    // description can't end up guaranteed a slot.
+    .filter((record) => record.categories.includes(GUARANTEED_CATEGORY_NAME));
+
+  return filterOutShorts(records);
+}
+
 async function fetchVideoDetails(videoIds) {
   const details = [];
   for (let i = 0; i < videoIds.length; i += 50) {
@@ -313,24 +382,7 @@ async function collectChannelVideos(channel, playlistCategoryMap) {
       const videoId = item.contentDetails.videoId;
       const video = videoDetailsById.get(videoId);
       if (!video || !isEligible(video)) continue;
-
-      const durationSeconds = parseIsoDurationToSeconds(video.contentDetails.duration);
-      pageCandidates.push({
-        id: videoId,
-        title: video.snippet.title,
-        thumbnailUrl:
-          video.snippet.thumbnails?.maxres?.url ??
-          video.snippet.thumbnails?.high?.url ??
-          video.snippet.thumbnails?.medium?.url ??
-          video.snippet.thumbnails?.default?.url,
-        publishedAt: video.snippet.publishedAt,
-        channelId: channel.channelId,
-        channelTitle: channel.channelTitle,
-        durationSeconds,
-        duration: formatDuration(durationSeconds),
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        categories: categorize(video.snippet.title, playlistCategoryMap.get(videoId)),
-      });
+      pageCandidates.push(buildRecord(video, channel, playlistCategoryMap));
     }
 
     eligible.push(...(await filterOutShorts(pageCandidates)));
@@ -347,7 +399,19 @@ async function main() {
   const perChannelVideos = await Promise.all(
     channels.map(async (channel) => {
       const playlistCategoryMap = await buildPlaylistCategoryMap(channel.channelId);
-      return collectChannelVideos(channel, playlistCategoryMap);
+      const [general, guaranteed] = await Promise.all([
+        collectChannelVideos(channel, playlistCategoryMap),
+        fetchGuaranteedCategoryVideos(channel, playlistCategoryMap),
+      ]);
+
+      // Reserve slots for guaranteed videos first, then fill the rest of
+      // this channel's share of TOTAL_LIMIT with the newest eligible ones —
+      // so sparse topics like financial services survive even though
+      // they're older than the natural newest-100 cutoff.
+      const guaranteedIds = new Set(guaranteed.map((v) => v.id));
+      const remainingSlots = Math.max(0, TOTAL_LIMIT - guaranteed.length);
+      const rest = general.filter((v) => !guaranteedIds.has(v.id)).slice(0, remainingSlots);
+      return [...guaranteed, ...rest];
     })
   );
   const records = perChannelVideos.flat();
