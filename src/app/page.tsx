@@ -12,7 +12,6 @@ const catalog = videos as CatalogVideo[];
 // tagged only with a hidden row's category (and nothing else) simply won't
 // appear on the page.
 const ROW_ORDER = [
-  "Financial Services & Credit Unions",
   "Agentic AI & AI Agents",
   "Keynote Speaker Reels",
   "Generative AI & The Future",
@@ -22,6 +21,7 @@ const ROW_ORDER = [
   "Customer Experience & Trends",
   "Public Sector, Healthcare & HR",
   "Boldness & Mindset",
+  "Financial Services",
   "Presentation & Storytelling Craft",
   "Behind the Scenes & Personal",
 ];

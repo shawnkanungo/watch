@@ -91,7 +91,7 @@ const CATEGORY_RULES = [
     test: (t) => /generative ai|artificial intelligence|\bai\b/i.test(t),
   },
   {
-    name: 'Financial Services & Credit Unions',
+    name: 'Financial Services',
     test: (t) =>
       /credit union|financial services|wealth management|\bcfo\b|fintech/i.test(t),
   },
@@ -100,15 +100,15 @@ const CATEGORY_RULES = [
 // Mirror this order in src/app/page.tsx's ROW_ORDER — most curated/specific
 // genres first, the broad AI catch-all near the end, FALLBACK_CATEGORY last.
 
-// "Financial Services & Credit Unions" content tends to be older, so it
-// rarely survives the newest-100 cutoff below on title matching alone.
-// These search queries reach deeper into the channel's history to find it;
-// final inclusion still requires a title match against CATEGORY_RULES above,
-// so a broad/fuzzy YouTube search match alone can't sneak an unrelated video
-// in. The queries themselves are a fixed list, so results stay deterministic
-// run to run (subject only to the channel's own content changing).
+// "Financial Services" content tends to be older, so it rarely survives the
+// newest-100 cutoff below on title matching alone. These search queries
+// reach deeper into the channel's history to find it; final inclusion still
+// requires a title match against CATEGORY_RULES above, so a broad/fuzzy
+// YouTube search match alone can't sneak an unrelated video in. The queries
+// themselves are a fixed list, so results stay deterministic run to run
+// (subject only to the channel's own content changing).
 const FINANCIAL_SERVICES_SEARCH_QUERIES = ['credit union', 'financial services'];
-const GUARANTEED_CATEGORY_NAME = 'Financial Services & Credit Unions';
+const GUARANTEED_CATEGORY_NAME = 'Financial Services';
 
 // Videos that are financial-services talks but don't say so in the title
 // (so no title rule above would ever catch them), confirmed by Shawn
