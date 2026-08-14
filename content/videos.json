@@ -304,20 +304,6 @@
     ]
   },
   {
-    "id": "a_NBFxV6l0k",
-    "title": "EMBRACE THE DARKNESS | Keynote Speaker Shawn Kanungo",
-    "thumbnailUrl": "https://i.ytimg.com/vi/a_NBFxV6l0k/maxresdefault.jpg",
-    "publishedAt": "2025-01-31T16:07:34Z",
-    "channelId": "UCURUV9lkptpRz0U76nmK7iQ",
-    "channelTitle": "Shawn Kanungo",
-    "durationSeconds": 110,
-    "duration": "1:50",
-    "url": "https://www.youtube.com/watch?v=a_NBFxV6l0k",
-    "categories": [
-      "Boldness & Mindset"
-    ]
-  },
-  {
     "id": "YmQ4Z7u2oYI",
     "title": "Why the Agentic AI Era will be HUGE | AI Keynote Speaker Shawn Kanungo",
     "thumbnailUrl": "https://i.ytimg.com/vi/YmQ4Z7u2oYI/maxresdefault.jpg",
@@ -1422,20 +1408,6 @@
     ]
   },
   {
-    "id": "f5jWQxaMU5I",
-    "title": "What's in a Green Room?",
-    "thumbnailUrl": "https://i.ytimg.com/vi/f5jWQxaMU5I/maxresdefault.jpg",
-    "publishedAt": "2023-01-08T17:03:44Z",
-    "channelId": "UCURUV9lkptpRz0U76nmK7iQ",
-    "channelTitle": "Shawn Kanungo",
-    "durationSeconds": 171,
-    "duration": "2:51",
-    "url": "https://www.youtube.com/watch?v=f5jWQxaMU5I",
-    "categories": [
-      "Behind the Scenes & Personal"
-    ]
-  },
-  {
     "id": "IxiZxKohnXs",
     "title": "The Bold Ones Unreleased Audition Tape",
     "thumbnailUrl": "https://i.ytimg.com/vi/IxiZxKohnXs/maxresdefault.jpg",
@@ -1448,6 +1420,35 @@
     "categories": [
       "Behind the Scenes & Personal",
       "Boldness & Mindset"
+    ]
+  },
+  {
+    "id": "uJys8R6zHO4",
+    "title": "The Bold Ones Book Review",
+    "thumbnailUrl": "https://i.ytimg.com/vi/uJys8R6zHO4/maxresdefault.jpg",
+    "publishedAt": "2022-12-17T21:08:48Z",
+    "channelId": "UCURUV9lkptpRz0U76nmK7iQ",
+    "channelTitle": "Shawn Kanungo",
+    "durationSeconds": 2249,
+    "duration": "37:29",
+    "url": "https://www.youtube.com/watch?v=uJys8R6zHO4",
+    "categories": [
+      "Boldness & Mindset"
+    ]
+  },
+  {
+    "id": "GH3G6b4MaFY",
+    "title": "ChatGPT WROTE MY SPEECH | Disruption Keynote Speaker Shawn Kanungo",
+    "thumbnailUrl": "https://i.ytimg.com/vi/GH3G6b4MaFY/maxresdefault.jpg",
+    "publishedAt": "2022-12-13T16:41:49Z",
+    "channelId": "UCURUV9lkptpRz0U76nmK7iQ",
+    "channelTitle": "Shawn Kanungo",
+    "durationSeconds": 158,
+    "duration": "2:38",
+    "url": "https://www.youtube.com/watch?v=GH3G6b4MaFY",
+    "categories": [
+      "AI Tools & Products",
+      "Innovation & Disruption"
     ]
   }
 ]
