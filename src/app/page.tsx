@@ -6,10 +6,13 @@ import type { CatalogVideo } from "@/types/video";
 
 const catalog = videos as CatalogVideo[];
 
-// Curated playlists and title-based rules surface first (most editorial);
-// anything else falls into "Trending Now" last. Order is fixed so the page
-// looks identical on every rebuild for the same input data.
+// Curated playlists and title-based rules surface first (most editorial).
+// Order is fixed so the page looks identical on every rebuild for the same
+// input data. HIDDEN_ROWS are deliberately not rendered at all — a video
+// tagged only with a hidden row's category (and nothing else) simply won't
+// appear on the page.
 const ROW_ORDER = [
+  "Financial Services & Credit Unions",
   "Agentic AI & AI Agents",
   "Keynote Speaker Reels",
   "Generative AI & The Future",
@@ -21,14 +24,14 @@ const ROW_ORDER = [
   "Boldness & Mindset",
   "Presentation & Storytelling Craft",
   "Behind the Scenes & Personal",
-  "Trending Now",
-  "Financial Services & Credit Unions",
 ];
+const HIDDEN_ROWS = new Set(["Trending Now"]);
 
 function groupByCategory(items: CatalogVideo[]) {
   const rows = new Map<string, CatalogVideo[]>();
   for (const video of items) {
     for (const category of video.categories) {
+      if (HIDDEN_ROWS.has(category)) continue;
       const row = rows.get(category) ?? [];
       row.push(video);
       rows.set(category, row);
